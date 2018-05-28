@@ -16,7 +16,10 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # TODO: implement this function
-        raise NotImplementedError
+        for i in actionA.effects:
+            for j in actionB.effects:
+                if i == ~j: return True
+        return False
 
 
     def _interference(self, actionA, actionB):
@@ -27,7 +30,13 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # TODO: implement this function
-        raise NotImplementedError
+        for i in actionB.preconditions:
+            for j in actionA.effects:
+                if i == ~j: return True
+        for i in actionA.preconditions:
+            for j in actionB.effects:
+                if i == ~j: return True         
+        return False
 
     def _competing_needs(self, actionA, actionB):
         """ Return True if any preconditions of the two actions are pairwise mutex in the parent layer
@@ -38,7 +47,10 @@ class ActionLayer(BaseActionLayer):
         layers.BaseLayer.parent_layer
         """
         # TODO: implement this function
-        raise NotImplementedError
+        for literalA in actionA.preconditions:
+            for literalB in actionB.preconditions:
+                if self.is_mutex(literalA, literalB): return(True)
+        return(False)
 
 
 class LiteralLayer(BaseLiteralLayer):
@@ -51,12 +63,15 @@ class LiteralLayer(BaseLiteralLayer):
         layers.BaseLayer.parent_layer
         """
         # TODO: implement this function
-        raise NotImplementedError
+        for actionA in self.parents[literalA]:
+            for actionB in self.parents[literalB]:
+                if not self.is_mutex(actionA, actionB): return(False)
+        return True
 
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
         # TODO: implement this function
-        raise NotImplementedError
+        return literalA == ~literalB
 
 
 class PlanningGraph:
@@ -115,7 +130,19 @@ class PlanningGraph:
         Russell-Norvig 10.3.1 (3rd Edition)
         """
         # TODO: implement this function
-        raise NotImplementedError
+        level_sum = 0
+        current_level = 0
+        alltarget = [i  for i in self.goal]
+        while True:
+            target_length  = len(alltarget)
+            for target_ind in range((target_length -1), -1 , -1):
+                if alltarget[target_ind] in self.literal_layers[-1]:
+                    level_sum += current_level
+                    alltarget.pop(target_ind)
+            if len(alltarget) == 0: return level_sum
+            else: 
+                current_level += 1
+                self._extend()
 
     def h_maxlevel(self):
         """ Calculate the max level heuristic for the planning graph
@@ -140,7 +167,17 @@ class PlanningGraph:
         WARNING: you should expect long runtimes using this heuristic with A*
         """
         # TODO: implement maxlevel heuristic
-        raise NotImplementedError
+        current_level = 0
+        alltarget = [i  for i in self.goal]
+        while True:
+            target_length  = len(alltarget)
+            for target_ind in range((target_length -1), -1 , -1):
+                if alltarget[target_ind] in self.literal_layers[-1]:
+                    alltarget.pop(target_ind)
+            if len(alltarget) == 0: return current_level
+            else: 
+                current_level += 1
+                self._extend()
 
     def h_setlevel(self):
         """ Calculate the set level heuristic for the planning graph
@@ -160,7 +197,13 @@ class PlanningGraph:
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
         # TODO: implement setlevel heuristic
-        raise NotImplementedError
+        current_level = 0
+        while True:
+            if len(self.goal - self.literal_layers[-1]) == 0:
+                return current_level
+            else: 
+                current_level += 1
+                self._extend()
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
